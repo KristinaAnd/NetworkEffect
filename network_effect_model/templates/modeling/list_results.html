@@ -1,0 +1,78 @@
+{% extends 'modeling/base.html' %}
+
+{% block title %}История моделей{% endblock %}
+
+{% block content %}
+<div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+        <h1 style="font-size: 28px; color: #2c3e50;">История моделей</h1>
+        <a href="{% url 'modeling:generate_form' %}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none;">+ Новая модель</a>
+    </div>
+    
+    {% if page_obj %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                    <th style="padding: 12px; text-align: left;">ID</th>
+                    <th style="padding: 12px; text-align: left;">Название</th>
+                    <th style="padding: 12px; text-align: left;">Дата</th>
+                    <th style="padding: 12px; text-align: left;">Агентов</th>
+                    <th style="padding: 12px; text-align: left;">Связей</th>
+                    <th style="padding: 12px; text-align: left;">Тип</th>
+                    <th style="padding: 12px; text-align: left;">Общий эффект</th>
+                    <th style="padding: 12px; text-align: left;">Бизнес-ценность</th>
+                    <th style="padding: 12px; text-align: left;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for model in page_obj %}
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    <td style="padding: 12px;">#{{ model.id }}</td>
+                    <td style="padding: 12px; font-weight: 500;">{{ model.name|default:"-" }}</td>
+                    <td style="padding: 12px;">{{ model.created_at|date:"d.m.Y H:i" }}</td>
+                    <td style="padding: 12px;">{{ model.num_agents }}</td>
+                    <td style="padding: 12px;">{{ model.num_edges }}</td>
+                    <td style="padding: 12px;">{{ model.get_directed_display|slice:":8" }}..</td>
+                    <td style="padding: 12px;">
+                        <span style="background: {% if model.total_effect >= 60 %}#d4edda; color: #155724{% elif model.total_effect >= 30 %}#fff3cd; color: #856404{% else %}#f8d7da; color: #721c24{% endif %}; padding: 4px 8px; border-radius: 4px; font-weight: bold;">
+                            {{ model.total_effect|floatformat:4 }}
+                        </span>
+                    </td>
+                    <td style="padding: 12px; font-weight: bold; color: #27ae60;">{{ model.business_value|floatformat:2|default:"-" }}</td>
+                    <td style="padding: 12px;">
+                        <a href="{% url 'modeling:view_result' model.id %}" style="color: #3498db; text-decoration: none;">Детали →</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Пагинация -->
+    {% if page_obj.has_other_pages %}
+    <div style="display: flex; justify-content: center; gap: 8px; margin-top: 24px;">
+        {% if page_obj.has_previous %}
+            <a href="?page=1" style="padding: 8px 12px; background: #f8f9fa; border-radius: 6px; text-decoration: none; color: #3498db;">« Первая</a>
+            <a href="?page={{ page_obj.previous_page_number }}" style="padding: 8px 12px; background: #f8f9fa; border-radius: 6px; text-decoration: none; color: #3498db;">‹ Предыдущая</a>
+        {% endif %}
+        
+        <span style="padding: 8px 12px; background: #3498db; color: white; border-radius: 6px;">{{ page_obj.number }}</span>
+        
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" style="padding: 8px 12px; background: #f8f9fa; border-radius: 6px; text-decoration: none; color: #3498db;">Следующая ›</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" style="padding: 8px 12px; background: #f8f9fa; border-radius: 6px; text-decoration: none; color: #3498db;">Последняя »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div style="text-align: center; padding: 60px 20px;">
+        <div style="font-size: 64px; margin-bottom: 16px;">📭</div>
+        <h3 style="color: #2c3e50; margin-bottom: 8px;">Нет созданных моделей</h3>
+        <p style="color: #7f8c8d; margin-bottom: 24px;">Создайте первую модель для анализа сетевых эффектов</p>
+        <a href="{% url 'modeling:generate_form' %}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none;">+ Создать модель</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

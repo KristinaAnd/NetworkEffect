@@ -1,0 +1,345 @@
+{% extends 'modeling/base.html' %}
+
+{% block title %}Создание модели{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
+        <h1 style="font-size: 28px; margin-bottom: 8px; color: #2c3e50;">📊 Новая модель</h1>
+        <p style="color: #7f8c8d; margin-bottom: 24px;">Настройте параметры для анализа сетевого эффекта</p>
+        
+        <form method="POST" action="{% url 'modeling:generate_submit' %}" id="mainForm">
+            {% csrf_token %}
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Название модели</label>
+                <input type="text" name="name" placeholder="Например: Анализ сетевого эффекта - 2026" 
+                       style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">👥 Количество агентов</label>
+                    <input type="number" name="num_agents" id="num_agents" min="2" max="100" value="10" required 
+                           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                    <small style="color: #7f8c8d;">от 2 до 100</small>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">🔗 Количество связей</label>
+                    <input type="number" name="density" id="density" min="1" value="10" required 
+                           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                    <small style="color: #7f8c8d;">Максимум: <span id="maxEdges">0</span></small>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">🎯 Направленность</label>
+                    <div style="display: flex; gap: 20px;">
+                        <label><input type="radio" name="directed" value="undirected" id="directed_undirected" checked> Ненаправленный</label>
+                        <label><input type="radio" name="directed" value="directed" id="directed_directed"> Направленный</label>
+                    </div>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">⚖️ Тип весов</label>
+                    <div style="display: flex; gap: 20px;">
+                        <label><input type="radio" name="weight_type" value="unweighted" id="weight_unweighted" checked> Без весов</label>
+                        <label><input type="radio" name="weight_type" value="weighted" id="weight_weighted"> Случайные веса</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Блок для сбалансированности -->
+            <div id="balanceBlock" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 12px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">⚖️ Сбалансированность</label>
+                <div style="display: flex; gap: 20px;">
+                    <label><input type="radio" name="balance_type" value="balanced" id="balance_balanced" checked> Сбалансированный</label>
+                    <label><input type="radio" name="balance_type" value="unbalanced" id="balance_unbalanced"> Несбалансированный</label>
+                </div>
+                <small style="color: #7f8c8d;">Сбалансированный граф имеет одинаковые веса в обе стороны, несбалансированный — разные</small>
+            </div>
+            
+            <div id="weightRange" style="display: none; margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">📏 Диапазон весов</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <input type="number" name="weight_min" id="weight_min" step="0.1" value="0.1" placeholder="Мин" 
+                           style="padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                    <input type="number" name="weight_max" id="weight_max" step="0.1" value="1.0" placeholder="Макс" 
+                           style="padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">🎲 Режим генерации</label>
+                <div style="display: flex; gap: 20px;">
+                    <label><input type="radio" name="random" value="false" id="random_standard" checked> Стандартный граф</label>
+                    <label><input type="radio" name="random" value="true" id="random_random"> Случайный граф</label>
+                </div>
+                <small style="color: #7f8c8d;">Программа автоматически подберет оптимальные параметры для случайного графа</small>
+            </div>
+            
+            <!-- Улучшенная панель случайных параметров -->
+            <div id="randomParamsPanel" style="display: none; margin-bottom: 20px; background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-radius: 16px; border: 1px solid #667eea30; overflow: hidden;">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px 20px;">
+                    <h4 style="margin: 0; color: white;">🎲 Случайные параметры</h4>
+                </div>
+                <div style="padding: 20px;">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+                        <div style="background: white; border-radius: 10px; padding: 10px;">
+                            <div style="font-size: 11px; color: #7f8c8d;">👥 Агенты</div>
+                            <div style="font-size: 20px; font-weight: bold; color: #2c3e50;" id="random_agents">10-30</div>
+                        </div>
+                        <div style="background: white; border-radius: 10px; padding: 10px;">
+                            <div style="font-size: 11px; color: #7f8c8d;">🔗 Связи</div>
+                            <div style="font-size: 20px; font-weight: bold; color: #2c3e50;" id="random_density">20-50% от макс.</div>
+                        </div>
+                        <div style="background: white; border-radius: 10px; padding: 10px;">
+                            <div style="font-size: 11px; color: #7f8c8d;">🎯 Направленность</div>
+                            <div style="font-size: 18px; font-weight: bold; color: #2c3e50;" id="random_directed">Случайная</div>
+                        </div>
+                        <div style="background: white; border-radius: 10px; padding: 10px;">
+                            <div style="font-size: 11px; color: #7f8c8d;">⚖️ Тип весов</div>
+                            <div style="font-size: 18px; font-weight: bold; color: #2c3e50;" id="random_weight">Случайный</div>
+                        </div>
+                        <div style="background: white; border-radius: 10px; padding: 10px;">
+                            <div style="font-size: 11px; color: #7f8c8d;">⚖️ Сбалансированность</div>
+                            <div style="font-size: 18px; font-weight: bold; color: #2c3e50;" id="random_balance">Случайная</div>
+                        </div>
+                        <div style="background: white; border-radius: 10px; padding: 10px;">
+                            <div style="font-size: 11px; color: #7f8c8d;">📏 Диапазон весов</div>
+                            <div style="font-size: 18px; font-weight: bold; color: #2c3e50;" id="random_weight_range">0.1 - 1.0</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button type="button" id="generateRandomParams" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                            🔄 Сгенерировать новые параметры
+                        </button>
+                        <button type="button" id="applyRandomParams" style="background: #3498db; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                            ✅ Применить к форме
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 16px;">
+                <button type="submit" style="background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%); color: white; padding: 12px 32px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">🚀 Запустить анализ</button>
+                <button type="reset" style="background: #95a5a6; color: white; padding: 12px 32px; border: none; border-radius: 8px; cursor: pointer;">Сбросить</button>
+            </div>
+        </form>
+        
+        <!-- Блок "Что даст компании эта модель?" -->
+        <div style="margin-top: 32px; background: linear-gradient(135deg, #f0f7ff 0%, #e8f4f8 100%); border-radius: 12px; padding: 24px; border-left: 4px solid #3498db;">
+            <h3 style="color: #2c3e50; margin-bottom: 16px;">💼 Что даст компании эта модель?</h3>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #3498db; margin-bottom: 8px;">🌐 СЕТЕВОЙ ЭФФЕКТ — ключевая ценность</h4>
+                <ul style="margin-left: 20px; color: #2c3e50; line-height: 1.8;">
+                    <li><strong>Закон Меткалфа</strong> — ценность сети пропорциональна квадрату числа участников (n²). Чем больше агентов, тем выше эффективность!</li>
+                    <li><strong>Синергия связей</strong> — каждая новая связь усиливает все существующие, создавая экспоненциальный рост ценности.</li>
+                    <li><strong>Эффект масштаба</strong> — рост сети приводит к снижению средних затрат на единицу взаимодействия.</li>
+                    <li><strong>Положительная обратная связь</strong> — увеличение плотности связей повышает привлекательность сети для новых участников.</li>
+                </ul>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #2ecc71; margin-bottom: 8px;">📊 БИЗНЕС-ПРЕИМУЩЕСТВА</h4>
+                <ul style="margin-left: 20px; color: #2c3e50; line-height: 1.8;">
+                    <li><strong>Оптимизация структуры</strong> — выявление узких мест и критических связей в коммуникациях</li>
+                    <li><strong>Оценка рисков</strong> — расчет надежности связей и устойчивости системы</li>
+                    <li><strong>Повышение ROI</strong> — количественная оценка потенциальной прибыли от реорганизации</li>
+                    <li><strong>Прогнозирование</strong> — моделирование роста сети и ее влияния на бизнес</li>
+                </ul>
+            </div>
+            
+            <div style="background: #ffffff80; border-radius: 8px; padding: 12px; margin-top: 12px;">
+                <p style="font-size: 13px; color: #555;"><strong>📈 Пример из практики:</strong> Увеличение плотности сети с 20% до 40% может повысить общую эффективность бизнеса на 50-70% за счет синергетического эффекта от перекрестных связей.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Функция для генерации случайных параметров
+    function generateRandomParameters() {
+        // Случайное количество агентов
+        const numAgents = Math.floor(Math.random() * 99) + 2;
+        
+        // Случайная направленность
+        const directedRandom = Math.random() > 0.5 ? 'directed' : 'undirected';
+        
+        // Максимальное количество связей
+        let maxPossibleEdges;
+        if (directedRandom === 'directed') {
+            maxPossibleEdges = numAgents * (numAgents - 1);
+        } else {
+            maxPossibleEdges = numAgents * (numAgents - 1) / 2;
+        }
+        
+        // Случайное количество связей (от 20% до 60% от максимума)
+        const densityPercent = Math.random() * 0.4 + 0.2; // 20-60%
+        const density = Math.max(1, Math.floor(maxPossibleEdges * densityPercent));
+        
+        // Случайный тип весов
+        const weightedRandom = Math.random() > 0.5 ? 'weighted' : 'unweighted';
+        
+        // Случайный баланс
+        let balancedRandom = 'balanced';
+        if (weightedRandom === 'weighted') {
+            balancedRandom = Math.random() > 0.5 ? 'balanced' : 'unbalanced';
+        }
+        
+        // Случайные веса
+        let weightMin = 0.1;
+        let weightMax = Infinity;
+        if (weightedRandom === 'weighted') {
+            weightMin = Math.round((Math.random() * 0.5 + 0.1) * 10) / 10;
+            weightMax = Math.round((Math.random() * 1.5 + weightMin + 0.1) * 10) / 10;
+        }
+        
+        return {
+            numAgents: numAgents,
+            directed: directedRandom,
+            density: density,
+            weighted: weightedRandom,
+            balanced: balancedRandom,
+            weightMin: weightMin,
+            weightMax: weightMax,
+            maxEdges: maxPossibleEdges,
+            densityPercent: Math.round(densityPercent * 100)
+        };
+    }
+    
+    // Функция для обновления отображения случайных параметров
+    function updateRandomPanelDisplay(params) {
+        document.getElementById('random_agents').innerHTML = `${params.numAgents}`;
+        document.getElementById('random_density').innerHTML = `${params.density} (${params.densityPercent}% от макс.)`;
+        document.getElementById('random_directed').innerHTML = params.directed === 'directed' ? 'Направленный' : 'Ненаправленный';
+        
+        if (params.weighted === 'weighted') {
+            document.getElementById('random_weight').innerHTML = 'Взвешенный';
+            document.getElementById('random_weight_range').innerHTML = `${params.weightMin} - ${params.weightMax}`;
+            document.getElementById('random_balance').innerHTML = params.balanced === 'balanced' ? 'Сбалансированный' : 'Несбалансированный';
+        } else {
+            document.getElementById('random_weight').innerHTML = 'Без весов';
+            document.getElementById('random_weight_range').innerHTML = 'Не применяется';
+            document.getElementById('random_balance').innerHTML = params.balanced === 'balanced' ? 'Сбалансированный' : 'Несбалансированный';
+        }
+    }
+    
+    // Функция для применения случайных параметров к форме
+    function applyRandomParameters() {
+        const params = generateRandomParameters();
+        
+        // Сохраняем параметры для текущей сессии
+        window.currentRandomParams = params;
+        
+        // Обновляем отображение в панели
+        updateRandomPanelDisplay(params);
+        
+        // Применяем к полям формы
+        document.getElementById('num_agents').value = params.numAgents;
+        document.getElementById('density').value = params.density;
+        
+        if (params.directed === 'directed') {
+            document.getElementById('directed_directed').checked = true;
+        } else {
+            document.getElementById('directed_undirected').checked = true;
+        }
+        
+        if (params.weighted === 'weighted') {
+            document.getElementById('weight_weighted').checked = true;
+            document.getElementById('weightRange').style.display = 'block';
+            document.getElementById('weight_min').value = params.weightMin;
+            document.getElementById('weight_max').value = params.weightMax;
+            
+            if (params.balanced === 'balanced') {
+                document.getElementById('balance_balanced').checked = true;
+            } else {
+                document.getElementById('balance_unbalanced').checked = true;
+            }
+        } else {
+            document.getElementById('weight_unweighted').checked = true;
+            document.getElementById('weightRange').style.display = 'none';
+        }
+        
+        // Обновляем отображение максимального количества связей
+        updateMaxEdges();
+    }
+    
+    // Функция только для генерации новых параметров (без применения к форме)
+    function generateNewRandomParams() {
+        const params = generateRandomParameters();
+        window.currentRandomParams = params;
+        updateRandomPanelDisplay(params);
+    }
+    
+    // Показать/скрыть панель случайных параметров
+    function toggleRandomPanel() {
+        const isRandom = document.getElementById('random_random').checked;
+        const randomPanel = document.getElementById('randomParamsPanel');
+        
+        if (isRandom) {
+            randomPanel.style.display = 'block';
+            // При выборе случайного режима, генерируем параметры
+            if (!window.currentRandomParams) {
+                generateNewRandomParams();
+            }
+            // Блокируем ручной ввод
+            document.getElementById('num_agents').readOnly = true;
+            document.getElementById('density').readOnly = true;
+            document.getElementById('num_agents').style.background = '#f5f5f5';
+            document.getElementById('density').style.background = '#f5f5f5';
+        } else {
+            randomPanel.style.display = 'none';
+            document.getElementById('num_agents').readOnly = false;
+            document.getElementById('density').readOnly = false;
+            document.getElementById('num_agents').style.background = 'white';
+            document.getElementById('density').style.background = 'white';
+            window.currentRandomParams = null;
+        }
+    }
+    
+    // Функция обновления максимального количества связей
+    function updateMaxEdges() {
+        let numAgents = parseInt(document.querySelector('[name="num_agents"]').value) || 0;
+        let directed = document.querySelector('[name="directed"]:checked').value === 'directed';
+        let maxEdges = directed ? numAgents * (numAgents - 1) : numAgents * (numAgents - 1) / 2;
+        document.getElementById('maxEdges').textContent = maxEdges;
+        document.getElementById('density').max = maxEdges;
+        
+        // Если случайный режим активен, обновляем информацию о плотности
+        if (document.getElementById('random_random').checked && window.currentRandomParams) {
+            let currentDensity = parseInt(document.getElementById('density').value) || 0;
+            let percent = Math.round(currentDensity / maxEdges * 100);
+            window.currentRandomParams.density = currentDensity;
+            window.currentRandomParams.densityPercent = percent;
+            updateRandomPanelDisplay(window.currentRandomParams);
+        }
+    }
+    
+    // Назначаем обработчики событий
+    document.getElementById('random_random').addEventListener('change', toggleRandomPanel);
+    document.getElementById('random_standard').addEventListener('change', toggleRandomPanel);
+    document.getElementById('generateRandomParams').addEventListener('click', function() {
+        generateNewRandomParams();
+    });
+    document.getElementById('applyRandomParams').addEventListener('click', function() {
+        if (window.currentRandomParams) {
+            applyRandomParameters();
+        }
+    });
+    
+    document.querySelector('[name="num_agents"]').addEventListener('input', updateMaxEdges);
+    document.querySelectorAll('[name="directed"]').forEach(r => r.addEventListener('change', updateMaxEdges));
+    
+    document.querySelectorAll('[name="weight_type"]').forEach(r => {
+        r.addEventListener('change', function() {
+            document.getElementById('weightRange').style.display = this.value === 'weighted' ? 'block' : 'none';
+        });
+    });
+    
+    // Инициализация
+    updateMaxEdges();
+    toggleRandomPanel();
+</script>
+{% endblock %}

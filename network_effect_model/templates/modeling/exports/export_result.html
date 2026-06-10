@@ -1,0 +1,29 @@
+{% extends 'modeling/base.html' %}
+
+{% block title %}Экспорт выполнен{% endblock %}
+
+{% block content %}
+<div style="background: white; border-radius: 20px; padding: 2rem; text-align: center;">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+    <h1>Экспорт успешно выполнен!</h1>
+    <p style="color: #666; margin: 1rem 0;">Файл был автоматически скачан</p>
+    
+    <div style="background: #d4edda; padding: 1rem; border-radius: 8px; margin: 2rem 0;">
+        <p style="color: #155724;">Формат: <strong>{{ format|upper }}</strong></p>
+        <p style="color: #155724;">Модель #{{ graph_model.id }}</p>
+    </div>
+    
+    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+        <a href="{% url 'modeling:export_form' graph_model.id %}" class="btn" style="padding: 0.75rem 1.5rem; background: #667eea; color: white; text-decoration: none; border-radius: 8px;">📤 Другой формат</a>
+        <a href="{% url 'modeling:view_result' graph_model.id %}" class="btn" style="padding: 0.75rem 1.5rem; background: #6c757d; color: white; text-decoration: none; border-radius: 8px;">📊 К результатам</a>
+        <a href="{% url 'modeling:dashboard' %}" class="btn" style="padding: 0.75rem 1.5rem; background: #28a745; color: white; text-decoration: none; border-radius: 8px;">🏠 На главную</a>
+    </div>
+</div>
+
+<script>
+    // Автоматический редирект через 5 секунд
+    setTimeout(function() {
+        window.location.href = "{% url 'modeling:view_result' graph_model.id %}";
+    }, 5000);
+</script>
+{% endblock %}

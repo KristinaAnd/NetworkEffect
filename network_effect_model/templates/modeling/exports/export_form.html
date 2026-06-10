@@ -1,0 +1,51 @@
+{% extends 'modeling/base.html' %}
+
+{% block title %}Экспорт данных{% endblock %}
+
+{% block content %}
+<div style="background: white; border-radius: 20px; padding: 2rem;">
+    <h1>Экспорт данных моделирования</h1>
+    <p style="color: #666; margin-bottom: 2rem;">Выберите формат для экспорта результатов моделирования #{{ graph_model.id }}</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div style="border: 2px solid #e0e0e0; border-radius: 15px; padding: 1.5rem; text-align: center; transition: all 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📄</div>
+            <h3>JSON</h3>
+            <p style="color: #666; font-size: 0.875rem; margin: 0.5rem 0;">Структурированный формат для разработчиков</p>
+            <a href="{% url 'modeling:export_result' graph_model.id 'json' %}" class="btn" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background: #667eea; color: white; text-decoration: none; border-radius: 8px;">Скачать JSON</a>
+        </div>
+        
+        <div style="border: 2px solid #e0e0e0; border-radius: 15px; padding: 1.5rem; text-align: center; transition: all 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+            <h3>CSV</h3>
+            <p style="color: #666; font-size: 0.875rem; margin: 0.5rem 0;">Табличный формат для Excel и Google Sheets</p>
+            <a href="{% url 'modeling:export_result' graph_model.id 'csv' %}" class="btn" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background: #28a745; color: white; text-decoration: none; border-radius: 8px;">Скачать CSV</a>
+        </div>
+        
+        <div style="border: 2px solid #e0e0e0; border-radius: 15px; padding: 1.5rem; text-align: center; transition: all 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📈</div>
+            <h3>Excel</h3>
+            <p style="color: #666; font-size: 0.875rem; margin: 0.5rem 0;">Полный отчет с несколькими листами</p>
+            <a href="{% url 'modeling:export_result' graph_model.id 'excel' %}" class="btn" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background: #ffc107; color: #333; text-decoration: none; border-radius: 8px;">Скачать Excel</a>
+        </div>
+        
+        <div style="border: 2px solid #e0e0e0; border-radius: 15px; padding: 1.5rem; text-align: center; transition: all 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📑</div>
+            <h3>PDF</h3>
+            <p style="color: #666; font-size: 0.875rem; margin: 0.5rem 0;">Форматированный отчет для печати</p>
+            <a href="{% url 'modeling:export_result' graph_model.id 'pdf' %}" class="btn" style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background: #dc3545; color: white; text-decoration: none; border-radius: 8px;">Скачать PDF</a>
+        </div>
+    </div>
+    
+    <div style="background: #f5f5f5; padding: 1rem; border-radius: 8px; margin-top: 2rem;">
+        <h3 style="margin-bottom: 0.5rem;">📋 Информация о данных</h3>
+        <p><strong>Модель #{{ graph_model.id }}</strong></p>
+        <p>Количество агентов: {{ graph_model.num_agents }} | Количество связей: {{ graph_model.density }}</p>
+        <p>Создано: {{ graph_model.created_at|date:"d.m.Y H:i:s" }}</p>
+    </div>
+    
+    <div style="margin-top: 2rem; text-align: center;">
+        <a href="{% url 'modeling:view_result' graph_model.id %}" style="color: #667eea; text-decoration: none;">← Вернуться к результатам</a>
+    </div>
+</div>
+{% endblock %}
